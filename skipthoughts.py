@@ -2,7 +2,6 @@
 Skip-thought vectors
 '''
 import os
-
 import theano
 import theano.tensor as tensor
 
@@ -10,6 +9,8 @@ import cPickle as pkl
 import numpy
 import copy
 import nltk
+import time
+t = time.time()
 
 from collections import OrderedDict, defaultdict
 from scipy.linalg import norm
@@ -17,18 +18,9 @@ from nltk.tokenize import word_tokenize
 
 profile = False
 
-#-----------------------------------------------------------------------------#
-# Specify model and table locations here
-#-----------------------------------------------------------------------------#
-path_to_models = '/u/rkiros/public_html/models/'
-path_to_tables = '/u/rkiros/public_html/models/'
-#-----------------------------------------------------------------------------#
-
-path_to_umodel = path_to_models + 'uni_skip.npz'
-path_to_bmodel = path_to_models + 'bi_skip.npz'
-
-
-def load_model():
+def load_model(dirname='data', fname_umodel='uni_skip.npz', fname_bmodel='bi_skip.npz'):
+    path_to_umodel = os.path.join(dirname, fname_umodel)
+    path_to_bmodel = os.path.join(dirname, fname_bmodel)
     """
     Load the model with saved tables
     """
@@ -40,11 +32,17 @@ def load_model():
         boptions = pkl.load(f)
 
     # Load parameters
+    print('init_params(uoptions)', time.time() - t)
     uparams = init_params(uoptions)
+    print('load_params(path_to_umodel, uparams)', time.time() - t)
     uparams = load_params(path_to_umodel, uparams)
+    print('init_tparams(uparams)', time.time() - t)
     utparams = init_tparams(uparams)
+    print('init_params_bi(boptions)', time.time() - t)
     bparams = init_params_bi(boptions)
+    print('load_params(path_to_bmodel, bparams)', time.time() - t)
     bparams = load_params(path_to_bmodel, bparams)
+    print('init_tparams(bparams)', time.time() - t)
     btparams = init_tparams(bparams)
 
     # Extractor functions
@@ -56,7 +54,7 @@ def load_model():
 
     # Tables
     print 'Loading tables...'
-    utable, btable = load_tables()
+    utable, btable = load_tables(dirname=dirname)
 
     # Store everything we need in a dictionary
     print 'Packing up...'
@@ -71,14 +69,14 @@ def load_model():
     return model
 
 
-def load_tables():
+def load_tables(dirname='data', fname_umodel='utable.npy', fname_bmodel='btable.npy'):
     """
     Load the tables
     """
     words = []
-    utable = numpy.load(path_to_tables + 'utable.npy')
-    btable = numpy.load(path_to_tables + 'btable.npy')
-    f = open(path_to_tables + 'dictionary.txt', 'rb')
+    utable = numpy.load(os.path.join(dirname, 'utable.npy'))
+    btable = numpy.load(os.path.join(dirname, 'btable.npy'))
+    f = open(os.path.join(dirname, 'dictionary.txt'), 'rb')
     for line in f:
         words.append(line.decode('utf-8').strip())
     f.close()
@@ -93,6 +91,7 @@ def encode(model, X, use_norm=True, verbose=True, batch_size=128, use_eos=False)
     """
     # first, do preprocessing
     X = preprocess(X)
+    #numpy.save('test/X.npy',X)
 
     # word dictionary and init
     d = defaultdict(lambda : 0)
@@ -127,6 +126,9 @@ def encode(model, X, use_norm=True, verbose=True, batch_size=128, use_eos=False)
                     if d[caption[j]] > 0:
                         uembedding[j,ind] = model['utable'][caption[j]]
                         bembedding[j,ind] = model['btable'][caption[j]]
+                        #numpy.save('test/caption_j,'+str(j)+'.npy',caption[j])
+                        #numpy.save('test/caption_j,'+str(j)+'_utable.npy',uembedding[j,ind])
+                        #numpy.save('test/caption_j,'+str(j)+'_btable.npy',bembedding[j,ind])
                     else:
                         uembedding[j,ind] = model['utable']['UNK']
                         bembedding[j,ind] = model['btable']['UNK']
@@ -148,6 +150,7 @@ def encode(model, X, use_norm=True, verbose=True, batch_size=128, use_eos=False)
                 bfeatures[c] = bff[ind]
     
     features = numpy.c_[ufeatures, bfeatures]
+    #numpy.save('test/features.npy', features)
     return features
 
 
