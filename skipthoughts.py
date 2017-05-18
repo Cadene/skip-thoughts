@@ -18,7 +18,7 @@ from nltk.tokenize import word_tokenize
 
 profile = False
 
-def load_model(dirname='data', fname_umodel='uni_skip.npz', fname_bmodel='bi_skip.npz'):
+def load_model(dirname='data/interim', fname_umodel='uni_skip.npz', fname_bmodel='bi_skip.npz'):
     path_to_umodel = os.path.join(dirname, fname_umodel)
     path_to_bmodel = os.path.join(dirname, fname_bmodel)
     """
@@ -74,8 +74,8 @@ def load_tables(dirname='data', fname_umodel='utable.npy', fname_bmodel='btable.
     Load the tables
     """
     words = []
-    utable = numpy.load(os.path.join(dirname, 'utable.npy'))
-    btable = numpy.load(os.path.join(dirname, 'btable.npy'))
+    utable = numpy.load(os.path.join(dirname, fname_umodel))
+    btable = numpy.load(os.path.join(dirname, fname_bmodel))
     f = open(os.path.join(dirname, 'dictionary.txt'), 'rb')
     for line in f:
         words.append(line.decode('utf-8').strip())
